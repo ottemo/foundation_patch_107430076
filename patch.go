@@ -42,7 +42,7 @@ func main() {
 		fmt.Println(env.ErrorDispatch(err))
 	}
 
-	fmt.Println("update products options" + time.Now().String())
+	fmt.Println("update products options: " + time.Now().String())
 	// update products option
 	for _, currentProduct := range productCollection.ListProducts() {
 		newOptions := ConvertProductOptionsToSnakeCase(currentProduct)
@@ -68,18 +68,24 @@ func main() {
 	}
 
 	for _, currentSubscription := range subscriptionCollection.ListSubscriptions() {
+		var updatedItems []subscription.StructSubscriptionItem
 		for _, subscriptionItem := range currentSubscription.GetItems() {
 			updatedOptions := make(map[string]interface{})
 			// Labels where used as a key for options key: value, so we will convert both of them
 			for optionKey, optionValue := range subscriptionItem.Options {
 				updatedOptions[utils.StrToSnakeCase(optionKey)] = utils.StrToSnakeCase(utils.InterfaceToString(optionValue))
 			}
+
 			subscriptionItem.Options = updatedOptions
 			if _, err = currentCart.AddItem(subscriptionItem.ProductID, subscriptionItem.Qty, subscriptionItem.Options); err != nil {
 				fmt.Println(env.ErrorDispatch(err))
 				fmt.Println(subscriptionItem.Options)
 			}
+
+			updatedItems = append(updatedItems, subscriptionItem)
 		}
+
+		currentSubscription.Set("items", updatedItems)
 
 		err = currentSubscription.Save()
 		if err != nil {
